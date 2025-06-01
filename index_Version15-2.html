@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Chirretesafio - Servidor de Minecraft</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Minecraft Font -->
+  <link href="https://fonts.cdnfonts.com/css/minecraft-4" rel="stylesheet">
+  <style>
+  @import url('https://fonts.cdnfonts.com/css/minecraft-4');
+  html, body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Minecraft', 'Minecraftia', monospace;
+    background: #181614;
+    color: #e6e2dd;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  * {
+    box-sizing: border-box;
+    transition: all 0.23s cubic-bezier(.7,0,.3,1);
+  }
+  .blurred {
+    filter: blur(7px) brightness(0.8) !important;
+    transition: filter 0.5s cubic-bezier(.7,0,.3,1);
+    pointer-events: none;
+    user-select: none;
+  }
+  .hero-bg {
+    position: fixed;
+    z-index: -3;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(120deg, #181614 70%, #c3a07a 180%);
+    background-size: 200% 200%;
+    animation: bgmove 16s ease-in-out infinite;
+    filter: blur(1.5px) brightness(0.95);
+  }
+  @keyframes bgmove {
+    0% {background-position: 0% 50%;}
+    50% {background-position: 100% 50%;}
+    100% {background-position: 0% 50%;}
+  }
+
+  /* Discord floating button */
+  .discord-btn-fixed {
+    position: fixed;
+    top: 22px;
+    right: 32px;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    background: linear-gradient(90deg, #5865f2 60%, #3e54ac 100%);
+    color: #fff;
+    font-family: 'Minecraft', 'Minecraftia', monospace;
+    border: none;
+    border-radius: 18px;
+    font-size: 1.08rem;
+    font-weight: bold;
+    padding: 0.53em 1.4em 0.53em 1.15em;
+    box-shadow: 0 4px 16px #5865f299;
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s, transform 0.16s, box-shadow 0.18s, filter 0.16s;
+    text-decoration: none;
+    outline: none;
+    gap: 0.7em;
+    filter: brightness(1);
+    animation: popIn 1.1s;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .discord-btn-fixed.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .discord-btn-fixed svg {
+    width: 1.5em;
+    height: 1.5em;
+    margin-right: 0.3em;
+    vertical-align: middle;
+    filter: drop-shadow(0 0 8px #5865f2cc);
+    transition: filter 0.18s;
+  }
+  .discord-btn-fixed:hover, .discord-btn-fixed:focus {
+    background: linear-gradient(90deg, #7a8cff 60%, #5865f2 100%);
+    color: #ffe599;
+    box-shadow: 0 0 24px #5865f2cc, 0 0 10px #ffe599aa;
+    transform: scale(1.07);
+    filter: brightness(1.13);
+    outline: 0;
+  }
+  .discord-btn-fixed:active {
+    transform: scale(0.98);
+  }
+
+  /* Discord button in nav (hidden on scroll) */
+  .discord-btn-nav {
+    display: inline-flex;
+    align-items: center;
+    background: linear-gradient(90deg, #5865f2 60%, #3e54ac 100%);
+    color: #fff;
+    font-family: 'Minecraft', 'Minecraftia', monospace;
+    border: none;
+    border-radius: 18px;
+    font-size: 1.02rem;
+    font-weight: bold;
+    padding: 0.45em 1.2em 0.45em 1em;
+    margin-left: 1.7em;
+    box-shadow: 0 4px 16px #5865f277;
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s, transform 0.16s, box-shadow 0.18s, filter 0.16s;
+    text-decoration: none;
+    outline: none;
+    gap: 0.7em;
+    filter: brightness(1);
+    animation: popIn 1.1s;
+  }
+  .discord-btn-nav svg {
+    width: 1.2em;
+    height: 1.2em;
+    margin-right: 0.15em;
+    vertical-align: middle;
+    filter: drop-shadow(0 0 7px #5865f2cc);
+    transition: filter 0.18s;
+  }
+  .discord-btn-nav:hover, .discord-btn-nav:focus {
+    background: linear-gradient(90deg, #7a8cff 60%, #5865f2 100%);
+    color: #ffe599;
+    box-shadow: 0 0 24px #5865f2cc, 0 0 10px #ffe599aa;
+    transform: scale(1.07);
+    filter: brightness(1.13);
+    outline: 0;
+  }
+  .discord-btn-nav:active {
+    transform: scale(0.97);
+  }
+
+  .fade-in-out {
+    position: fixed;
+    z-index: 9999;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(24,22,20,0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeout 2.5s cubic-bezier(.5,0,.5,1) 0.7s forwards;
+    font-family: 'Minecraft', 'Minecraftia', monospace;
+    backdrop-filter: blur(9px);
+    -webkit-backdrop-filter: blur(9px);
+  }
+  .fade-in-out-text {
+    color: #f7f7f7;
+    font-size: 2.7rem;
+    text-align: center;
+    text-shadow: 0 0 16px #222, 0 3px 0 #b1a06b;
+    letter-spacing: 0.1em;
+    font-family: 'Minecraft', 'Minecraftia', monospace;
+    padding: 0.5em 1em;
+    border: 3px solid #b1a06b;
+    background: rgba(34,34,34,0.92);
+    border-radius: 14px;
+    box-shadow: 0 0 32px #0008;
+    animation: popIn 0.8s cubic-bezier(.5,0,.5,1), fadeTextOut 1.5s 2.1s cubic-bezier(.5,0,.5,1) forwards;
+  }
+  @keyframes popIn {
+    0% {transform: scale(0.8);}
+    100% {transform: scale(1);}
+  }
+  @keyframes fadeTextOut {
+    to { opacity: 0; }
+  }
+  @keyframes fadeout {
+    0% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { opacity: 0; visibility: hidden;}
+  }
+
+  .legal-overlay-bg {
+    position: fixed;
+    z-index: 9998;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(30, 27, 24, 0.68);
+    backdrop-filter: blur(7px);
+    -webkit-backdrop-filter: blur(7px);
+    display: none;
+    transition: opacity 0.4s cubic-bezier(.7,0,.3,1);
+  }
+  .legal-overlay-bg.active {
+    display: block;
+    opacity: 1;
+  }
+  .legal-modal {
+    position: fixed;
+    z-index: 10000;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(31, 28, 25, 0.97);
+    border: 3px solid #b1a06b;
+    border-radius: 16px;
+    box-shadow: 0 0 32px #000a;
+    padding: 2.2rem 1.5rem 1.3rem 1.5rem;
+    max-width: 420px;
+    width: 92vw;
+    font-family: 'Minecraft', 'Minecraftia', monospace;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    color: #fffbe7;
+    animation: legalModalIn .5s cubic-bezier(.7,0,.3,1);
+  }
+  .legal-modal.active {
+    display: flex;
+    animation: legalModalIn 0.9s cubic-bezier(.7,0,.3,1);
+  }
+  @keyframes legalModalIn {
+    0% { opacity: 0; transform: translate(-50%, -46%) scale(0.97);}
+    80% { opacity: 1; }
+    100% { opacity: 1; transform: translate(-50%, -50%) scale(1);}
+  }
+  .legal-modal-title {
+    font-size: 1.25rem;
+    color: #c3a07a;
+    margin-bottom: 1.2rem;
+    font-family: 'Minecraft', 'Minecraftia', monospace;
+    text-shadow: 0 2px 0 #181614;
+    letter-spacing: 0.09em;
+    animation: glow 1.5s infinite alternate;
+  }
+  @keyframes glow {
+    0% { text-shadow: 0 2px 0 #181614, 0 0 8px #c3a07a22;}
+    100% { text-shadow: 0 2px 0 #181614, 0 0 12px #eec47c99, 0 0 18px #c3a07a66;}
+  }
+  .legal-list {
+    text-align: left;
+    font-size: 1.05rem;
+    margin: 0 0 1.3rem 0;
+    padding-left: 1.1em;
+    color: #f1e6d4;
+    animation: fadeIn 1.6s;
+  }
+  .legal-list li {
+    margin-bottom: 0.75em;
+    font-family: 'Minecraft', 'Minecraftia', monospace;
+    line-height: 1.4;
+    transition: color 0.2s;
+    border-left: 3px solid transparent;
+    padding-left: 0.6em;
+  }
+  .legal-list li:hover {
+    color: #ffe599;
+    border-left: 3px solid #c3a07a;
+    background: #23201a44;
+  }
+  .legal-modal-buttons {
+    display: flex;
+    gap: 1.2em;
+    justify-content: center;
+    margin-top: 0.7rem;
+  }
+  .legal-btn {
+    font-family: 'Minecraft', 'Minecraftia', monospace;
+    background: #c3a07a;
+    color: #181614;
+    font-weight: bold;
+    border: none;
+    border-radius: 13px;
+    padding: 0.57em 1.7em;
+    font-size: 1.07rem;
+    cursor: pointer;
+    box-shadow: 0 2px 8px #b1a06b33;
+    transition: background 0.22s, color 0.22s, transform 0.18s, box-shadow 0.18s;
+    outline: none;
+    filter: brightness(1);
+  }
+  .legal-btn:focus, .legal-btn:hover {
+    background: #ffe599;
+    color: #b18c2c;
+    box-shadow: 0 0 18px #ffe59999, 0 0 8px #c3a07a77;
+    transform: scale(1.07) translateY(-2.5px);
+    filter: brightness(1.10);
+  }
+  .legal-btn.deny {
+    background: #b13c3c;
+    color: #fffbe7;
+  }
+  .legal-btn.deny:focus, .legal-btn.deny:hover {
+    background: #fc3c3c;
+    color: #fff;
+    box-shadow: 0 0 18px #fc3c3c77, 0 0 8px #ffbbbb77;
+    filter: brightness(1.10);
+  }
+
+  @keyframes fadeIn {
+    from {opacity: 0;}
+    to {opacity: 1;}
+  }
+
+  header {
+    padding: 2rem 0 1rem 0;
+    text-align: center;
+    background: rgba(24,22,20,0.93);
+    border-bottom: 2px solid #c3a07a;
+    letter-spacing: 0.05em;
+    font-family: 'Minecraft', 'Minecraftia', monospace;
+    border-radius: 0 0 18px 18px;
+    box-shadow: 0 8px 24px 0 rgba(195,160,122,0.13);
+    animation: fadeIn 1.1s;
+    position: relative;
+    z-index: 30;
+  }
+  .logo {
+    width: 70px;
+    border-radius: 14px;
+    margin-bottom: 1.2rem;
+    box-shadow: 0 8px 24px 0 rgba(195,160,122,0.18);
+    animation: bounce 2s 0.4s infinite alternate;
+    transition: box-shadow 0.22s, filter 0.16s;
+  }
+  .logo:hover, .logo:focus {
+    filter: brightness(1.22) drop-shadow(0 0 0px #fff) drop-shadow(0 0 24px #c3a07a88);
+    box-shadow: 0 0 40px #ffe59966, 0 0 16px #c3a07a77;
+    outline: 0;
+  }
+  @keyframes bounce {
+    0% { transform: translateY(0);}
+    100% { transform: translateY(-8px);}
+  }
+  .brand {
+    font-size: 2.25rem;
+    color: #f1e6d4;
+    font-weight: 700;
+    margin-bottom: 0.1em;
+    letter-spacing: 0.08em;
+    font-family: 'Minecraft', 'Minecraftia', monospace;
+    text-shadow: 0 0 14px #c3a07a44;
+    transition: text-shadow 0.22s;
+  }
+  .brand:hover, .brand:focus {
+    text-shadow: 0 0 22px #ffe59999, 0 0 8px #c3a07a77;
+    color: #ffe599;
+    filter: brightness(1.11);
+  }
+  .subtitle {
+    font-size: 1.13rem;
+    color: #c3a07a;
+    margin-bottom: 0.5rem;
+    font-weight: 400;
+    font-family: 'Minecraft', 'Minecraftia', monospace;
+    letter-spacing: 0.04em;
+    transition: color 0.22s;
+  }
+  .subtitle:hover, .subtitle:focus {
+    color: #ffe599;
+    filter: brightness(1.13);
+    text-shadow: 0 0 16px #ffe59999;
+  }
+  nav {
+    margin: 1.6rem 0 0.8rem 0;
+    animation: fadeIn 1.7s;
+    display: inline-block;
+  }
+  nav a {
+    color: #c3a07a;
+    text-decoration: none;
+    margin: 0 1.1rem;
+    font-weight: 500;
+    font-size: 1.01rem;
+    transition: color 0.22s, text-shadow 0.22s;
+    font-family: 'Minecraft', 'Minecraftia', monospace;
+    padding: 0.2em 0.7em;
+    border-radius: 10px;
+  }
+  nav a:hover, nav a:focus {
+    color: #ffe599;
+    text-shadow: 0 0 10px #ffe59988, 0 0 7px #c3a07a;
+    background: #23201a66;
+    outline: 0;
+  }
+
+  .hero {
+    max-width: 750px;
+    margin: 2.5rem auto 2rem auto;
+    text-align: center;
+    padding: 0 1.2rem;
+    position: relative;
+    z-index: 2;
+    font-family: 'Minecraft', 'Minecraftia', monospace;
+    animation: fadeIn 2.1s;
+  }
+  .hero-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #f1e6d4;
+    margin-bottom: 1.1rem;
+    letter-spacing: 0.04em;
+    font-family: 'Minecraft', 'Minecraftia', monospace;
+    text-shadow: 0 0 12px #c3a07a44;
+    transition: text-shadow 0.22s;
+    animation: popIn 1.1s;
+  }
+  .hero-title:hover, .hero-title:focus {
+    text-shadow: 0 0 25px #ffe599aa, 0 0 8px #c3a07a77;
+    color: #ffe599;
+    outline: 0;
+  }
+  .hero-desc {
+    font-size: 1.12rem;
+    color: #e6e2dd;
+    margin-bottom: 2rem;
+    font-weight: 400;
+    font-family: 'Minecraft', 'Minecraftia', monospace;
+    transition: color 0.18s, text-shadow 0.18s;
+  }
+  .hero-desc:hover, .hero-desc:focus {
+    color: #ffe599;
+    text-shadow: 0 0 10px #ffe59988;
+    outline: 0;
+  }
+  .cta-btn {
+    display: inline-block;
+    background: #c3a07a;
+    color: #181614;
+    font-weight: 700;
+    font-size: 1.13rem;
+    border: none;
+    border-radius: 28px;
+    padding: 0.85em 2.2em;
+    text-decoration: none;
+    box-shadow: 0 4px 18px rgba(195,160,122,0.14);
+    transition: background 0.18s, color 0.18s, transform 0.18s, box-shadow 0.18s, filter 0.17s;
+    cursor: pointer;
+    margin-bottom: 1.2rem;
+    font-family: 'Minecraft', 'Minecraftia', monospace;
+    outline: none;
+    filter: brightness(1);
+    animation: popIn 1.5s cubic-bezier(.6,0,.3,1);
+  }
+  .cta-btn:focus, .cta-btn:hover {
+    background: #ffe599;
+    color: #b18c2c;
+    transform: scale(1.08) translateY(-2.5px);
+    box-shadow: 0 0 18px #ffe59999, 0 0 8px #c3a07a77;
+    filter: brightness(1.10);
+    outline: 0;
+  }
+  .about, .features, .join {
+    max-width: 730px;
+    margin: 0 auto 2.2rem auto;
+    background: rgba(30, 27, 24, 0.88);
+    border-radius: 12px;
+    padding: 2.1rem 1.4rem 1.5rem 1.4rem;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.14);
+    position: relative;
+    font-family: 'Minecraft', 'Minecraftia', monospace;
+    animation: fadeIn 1.5s;
+    transition: box-shadow 0.22s, background 0.22s;
+  }
+  .about:hover, .features:hover, .join:hover,
+  .about:focus-within, .features:focus-within, .join:focus-within {
+    box-shadow: 0 0 22px #ffe59977, 0 0 8px #c3a07a55;
+    background: rgba(35, 30, 24, 0.97);
+    outline: 0;
+  }
+  h2 {
+    color: #c3a07a;
+    font-size: 1.23rem;
+    font-weight: 700;
+    margin-top: 0;
+    margin-bottom: 1.2rem;
+    letter-spacing: 0.05em;
+    text-align: left;
+    font-family: 'Minecraft', 'Minecraftia', monospace;
+    transition: color 0.22s, text-shadow 0.22s;
+  }
+  h2:hover, h2:focus {
+    color: #ffe599;
+    text-shadow: 0 0 10px #ffe59999, 0 0 7px #c3a07a;
+    outline: 0;
+  }
+  .about p, .features ul, .join ol {
+    font-size: 1.04rem;
+    margin: 0.3em 0 0 0;
+    font-family: 'Minecraft', 'Minecraftia', monospace;
+    transition: color 0.19s;
+  }
+  .about p:hover, .features ul:hover, .join ol:hover {
+    color: #ffe599;
+    outline: 0;
+  }
+  .features ul {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 0;
+  }
+  .features li {
+    margin: 0.8em 0;
+    padding-left: 1.7em;
+    position: relative;
+    font-family: 'Minecraft', 'Minecraftia', monospace;
+    transition: color 0.19s, background 0.18s;
+    border-left: 3px solid transparent;
+  }
+  .features li:hover, .features li:focus {
+    color: #ffe599;
+    border-left: 3px solid #c3a07a;
+    background: #23201a44;
+    outline: 0;
+  }
+  .features li:before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: #c3a07a;
+    font-size: 1.09em;
+    font-weight: bold;
+    font-family: 'Minecraft', 'Minecraftia', monospace;
+    transition: color 0.19s;
+  }
+  .join ol {
+    margin: 0 0 1em 1.2em;
+    font-family: 'Minecraft', 'Minecraftia', monospace;
+    transition: color 0.19s;
+  }
+  .join ol li {
+    margin-bottom: 0.7em;
+    cursor: pointer;
+    transition: color 0.19s, background 0.18s;
+    border-left: 3px solid transparent;
+    padding-left: 0.5em;
+  }
+  .join ol li:hover, .join ol li:focus {
+    color: #ffe599;
+    border-left: 3px solid #c3a07a;
+    background: #23201a44;
+    outline: 0;
+  }
+  .server-ip {
+    font-family: 'Minecraft', 'Minecraftia', monospace;
+    background: #222;
+    padding: 0.21em 0.7em;
+    border-radius: 7px;
+    color: #c3a07a;
+    font-weight: bold;
+    letter-spacing: 0.01em;
+    font-size: 1rem;
+    transition: background 0.20s, color 0.20s, filter 0.18s;
+    cursor: pointer;
+  }
+  .server-ip:hover, .server-ip:focus {
+    background: #ffe599;
+    color: #b18c2c;
+    filter: brightness(1.07);
+    outline: 0;
+  }
+  .copy-btn {
+    background: #c3a07a;
+    color: #181614;
+    font-weight: bold;
+    border: none;
+    border-radius: 20px;
+    padding: 0.49em 1.08em;
+    margin-top: 0.7em;
+    cursor: pointer;
+    font-size: 1.01rem;
+    transition: background .2s, color .2s, transform 0.18s, box-shadow 0.19s;
+    font-family: 'Minecraft', 'Minecraftia', monospace;
+    outline: none;
+    box-shadow: 0 2px 8px #b1a06b33;
+    filter: brightness(1);
+  }
+  .copy-btn:focus, .copy-btn:hover {
+    background: #ffe599;
+    color: #b18c2c;
+    transform: scale(1.08);
+    box-shadow: 0 0 18px #ffe59999, 0 0 8px #c3a07a77;
+    filter: brightness(1.10);
+    outline: 0;
+  }
+  #copy-msg {
+    font-size: 0.98rem;
+    color: #c3a07a;
+    margin-left: 1.08em;
+    font-family: 'Minecraft', 'Minecraftia', monospace;
+    transition: color 0.15s;
+    animation: fadeIn 0.8s;
+  }
+  #copy-msg:empty { display:none; }
+  .top-section, .staff-section {
+    max-width: 730px;
+    margin: 0 auto 2.2rem auto;
+    background: rgba(30, 27, 24, 0.88);
+    border-radius: 12px;
+    padding: 2.1rem 1.4rem 1.5rem 1.4rem;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.14);
+    position: relative;
+    font-family: 'Minecraft', 'Minecraftia', monospace;
+    animation: fadeIn 1.2s;
+    transition: box-shadow 0.22s, background 0.22s;
+  }
+  .top-section:hover, .staff-section:hover,
+  .top-section:focus-within, .staff-section:focus-within {
+    box-shadow: 0 0 22px #5865f277, 0 0 8px #c3a07a55;
+    background: rgba(35, 30, 24, 0.97);
+    outline: 0;
+  }
+  .top-title, .staff-title {
+    color: #5865f2;
+    font-size: 1.22rem;
+    font-weight: 700;
+    margin-top: 0;
+    margin-bottom: 1.1rem;
+    letter-spacing: 0.05em;
+    text-align: left;
+    font-family: 'Minecraft', 'Minecraftia', monospace;
+    text-shadow: 0 0 10px #5865f288, 0 2px 0 #181614;
+    transition: color 0.2s;
+  }
+  .top-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 1.05rem;
+  }
+  .top-list li {
+    margin: 0.7em 0;
+    padding: 0.6em 1.2em;
+    background: #23201a55;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    gap: 0.7em;
+    transition: background 0.23s, color 0.23s, box-shadow 0.18s;
+    box-shadow: 0 2px 8px #5865f213;
+    font-weight: 600;
+  }
+  .top-list li:hover, .top-list li:focus {
+    background: #5865f222;
+    color: #ffe599;
+    box-shadow: 0 0 16px #5865f288;
+    outline: 0;
+  }
+  .top-position {
+    font-size: 1.1em;
+    margin-right: 0.6em;
+    color: #c3a07a;
+    font-weight: bold;
+    text-shadow: 0 0 8px #ffe59944;
+    width: 1.9em;
+    display: inline-block;
+    text-align: center;
+  }
+  .staff-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 0.5em;
+    font-size: 1rem;
+    margin-top: 0.3em;
+    background: none;
+    animation: fadeIn 1.8s;
+  }
+  .staff-table th, .staff-table td {
+    padding: 0.55em 0.9em;
+    border-radius: 8px;
+    background: #23201a55;
+    color: #e6e2dd;
+    text-align: left;
+    transition: background 0.2s, color 0.18s, box-shadow 0.18s;
+  }
+  .staff-table tr:hover td, .staff-table tr:focus td {
+    background: #5865f222;
+    color: #ffe599;
+    box-shadow: 0 0 16px #5865f288;
+    outline: 0;
+  }
+  .staff-role {
+    color: #c3a07a;
+    font-weight: bold;
+    text-shadow: 0 0 8px #ffe59944;
+  }
+  .staff-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    margin-right: 0.6em;
+    vertical-align: middle;
+    box-shadow: 0 0 7px #18161444;
+    object-fit: cover;
+    background: #23201a;
+  }
+  footer {
+    text-align: center;
+    padding: 1.5rem;
+    background: rgba(24, 22, 20, 0.93);
+    border-radius: 24px 24px 0 0;
+    font-size: 0.97rem;
+    letter-spacing: 1px;
+    margin-top: 2.3rem;
+    font-family: 'Minecraft', 'Minecraftia', monospace;
+    transition: background 0.19s, color 0.19s;
+    animation: fadeIn 2.8s;
+  }
+  footer:hover, footer:focus {
+    background: #23201a;
+    color: #ffe599;
+    outline: 0;
+  }
+  @media (max-width: 1100px) {
+    .discord-btn-fixed { right: 10px; }
+  }
+  @media (max-width: 870px) {
+    .about, .features, .join, .top-section, .staff-section {padding: 1.2rem 0.7rem;}
+    .brand {font-size: 1.5rem;}
+    .logo {width: 55px;}
+    .discord-btn-fixed { right: 5px; }
+  }
+  @media (max-width: 700px) {
+    .about, .features, .join, .top-section, .staff-section {padding: 1.2rem 0.6rem;}
+    footer {font-size: 0.85rem;}
+    .hero-title {font-size: 1.23rem;}
+    .discord-btn-fixed { right: 3vw; top: 12px; }
+    nav { display: block;}
+  }
+  </style>
+</head>
+<body>
+  <div class="hero-bg"></div>
+  <div class="fade-in-out" id="fadeInOut">
+    <span class="fade-in-out-text">Chirretesafio</span>
+  </div>
+  <!-- Legal Notice Overlay -->
+  <div class="legal-overlay-bg" id="legalBg"></div>
+  <div class="legal-modal" id="legalModal">
+    <div class="legal-modal-title">Aviso Legal</div>
+    <ul class="legal-list">
+      <li>Este servidor no está afiliado con Mojang AB. Minecraft es una marca registrada de Mojang.</li>
+      <li>El contenido del servidor y esta web pertenece a sus creadores. No se permite su uso sin permiso.</li>
+      <li>Al jugar aceptas las reglas del servidor. No se tolera el mal comportamiento.</li>
+      <li>Recopilamos solo lo necesario para moderar el servidor (como IP y nombre de usuario).</li>
+      <li>No nos hacemos responsables por errores, pérdidas o daños causados por terceros.</li>
+    </ul>
+    <div class="legal-modal-buttons">
+      <button class="legal-btn accept" id="legalAccept">Sí acepto</button>
+      <button class="legal-btn deny" id="legalDeny">No acepto</button>
+    </div>
+  </div>
+  <!-- Discord Floating Button -->
+  <a href="https://discord.com/invite/tu-servidor" target="_blank" class="discord-btn-fixed" id="discordFloatBtn">
+    <svg viewBox="0 0 245 240" fill="none"><circle cx="120" cy="120" r="120" fill="#5865F2"/><path d="M104.4 159.7c-8.6 0-15.6-7.8-15.6-17.5 0-9.6 7-17.5 15.6-17.5s15.6 7.8 15.6 17.5c0 9.6-7 17.5-15.6 17.5zm36.2 0c-8.6 0-15.6-7.8-15.6-17.5 0-9.6 7-17.5 15.6-17.5s15.6 7.8 15.6 17.5c0 9.6-7 17.5-15.6 17.5z" fill="#fff"/><path d="M195.3 47.2A199.2 199.2 0 00161.5 37c-1.6-2.3-3.1-4.3-4.7-6.2a9.8 9.8 0 00-7.3-3.3c-6.2-.4-12.5-.6-18.6-.6s-12.4.2-18.6.6a9.8 9.8 0 00-7.3 3.3c-1.6 1.8-3.2 3.9-4.7 6.2A199 199 0 0049.6 47.2c-3.9 5.6-7.2 11.7-9.8 18.2C9.5 96 1.6 142.6 7.4 188c0 0 36.1 62.2 109.2 62.2 73 0 109.1-62.2 109.1-62.2 5.9-45.4-2-92-32.4-122.6zM81 166.5c-17.6 0-31.7-15.7-31.7-35 0-19.4 14.1-35 31.7-35 17.6 0 31.7 15.7 31.7 35s-14.2 35-31.7 35zm83.2 0c-17.6 0-31.7-15.7-31.7-35 0-19.4 14.1-35 31.7-35 17.6 0 31.7 15.7 31.7 35s-14.1 35-31.7 35z" fill="#fff"/></svg>
+    Discord
+  </a>
+  <div id="allContent">
+    <header id="mainHeader">
+      <img src="https://static.wikia.nocookie.net/minecraft_gamepedia/images/6/6e/Grass_Block_JE5_BE3.png" alt="Logo" class="logo" tabindex="0"/>
+      <div class="brand" tabindex="0">Chirretesafio</div>
+      <div class="subtitle" tabindex="0">Renacimiento</div>
+      <nav>
+        <a href="#about" tabindex="0">Sobre</a>
+        <a href="#features" tabindex="0">Características</a>
+        <a href="#jugar" tabindex="0">Unirse</a>
+        <!-- Discord nav button -->
+        <a href="https://discord.com/invite/tu-servidor" target="_blank" class="discord-btn-nav" id="discordNavBtn" tabindex="0">
+          <svg viewBox="0 0 245 240" fill="none"><circle cx="120" cy="120" r="120" fill="#5865F2"/><path d="M104.4 159.7c-8.6 0-15.6-7.8-15.6-17.5 0-9.6 7-17.5 15.6-17.5s15.6 7.8 15.6 17.5c0 9.6-7 17.5-15.6 17.5zm36.2 0c-8.6 0-15.6-7.8-15.6-17.5 0-9.6 7-17.5 15.6-17.5s15.6 7.8 15.6 17.5c0 9.6-7 17.5-15.6 17.5z" fill="#fff"/><path d="M195.3 47.2A199.2 199.2 0 00161.5 37c-1.6-2.3-3.1-4.3-4.7-6.2a9.8 9.8 0 00-7.3-3.3c-6.2-.4-12.5-.6-18.6-.6s-12.4.2-18.6.6a9.8 9.8 0 00-7.3 3.3c-1.6 1.8-3.2 3.9-4.7 6.2A199 199 0 0049.6 47.2c-3.9 5.6-7.2 11.7-9.8 18.2C9.5 96 1.6 142.6 7.4 188c0 0 36.1 62.2 109.2 62.2 73 0 109.1-62.2 109.1-62.2 5.9-45.4-2-92-32.4-122.6zM81 166.5c-17.6 0-31.7-15.7-31.7-35 0-19.4 14.1-35 31.7-35 17.6 0 31.7 15.7 31.7 35s-14.2 35-31.7 35zm83.2 0c-17.6 0-31.7-15.7-31.7-35 0-19.4 14.1-35 31.7-35 17.6 0 31.7 15.7 31.7 35s-14.1 35-31.7 35z" fill="#fff"/></svg>
+          Discord
+        </a>
+      </nav>
+    </header>
+    <section class="hero">
+      <div class="hero-title" tabindex="0">
+        ¡Únete a Chirretesafio y vive la mejor aventura Minecraft junto a nosotros!
+      </div>
+      <div class="hero-desc" tabindex="0">
+        La evolución de tu experiencia Minecraft está aquí. Chirretesafio es el lugar donde la creatividad y el reto se encuentran en una comunidad activa y moderna, lista para recibirte.
+      </div>
+      <a href="#jugar" class="cta-btn" tabindex="0">¿Cómo Unirme?</a>
+    </section>
+    <section class="about" id="about" tabindex="0">
+      <h2>¿Qué es Chirretesafio?</h2>
+      <p>
+        Chirretesafio es un servidor de Minecraft para quienes buscan una experiencia moderna, creativa y desafiante. Ofrecemos eventos únicos, construcciones colaborativas y una economía vibrante. ¡Forma parte de una comunidad elegante y apasionada!
+      </p>
+    </section>
+    <section class="features" id="features" tabindex="0">
+      <h2>Características</h2>
+      <ul>
+        <li>Eventos semanales y recompensas exclusivas</li>
+        <li>Comunidad activa y amigable</li>
+        <li>Minijuegos y retos especiales</li>
+        <li>Sistema de economía y tiendas únicas</li>
+        <li>Soporte y moderación constante</li>
+      </ul>
+    </section>
+    <section class="join" id="jugar" tabindex="0">
+      <h2>¿Cómo unirse?</h2>
+      <ol>
+        <li>Abre Minecraft (Java Edition)</li>
+        <li>Entra en "Multijugador" &gt; "Agregar servidor"</li>
+        <li>Coloca la IP: <span class="server-ip" tabindex="0" onclick="copyIP()">mc.chirretesafio.com</span></li>
+        <li>¡Únete y comienza tu aventura!</li>
+      </ol>
+      <button class="copy-btn" onclick="copyIP()" tabindex="0">Copiar IP</button>
+      <span id="copy-msg"></span>
+    </section>
+    <!-- RANKING + STAFF AL FINAL -->
+    <section class="top-section" id="top" tabindex="0">
+      <div class="top-title">Top Jugadores</div>
+      <ul class="top-list">
+        <li><span class="top-position">🥇</span> SteveMaster - 3500 pts</li>
+        <li><span class="top-position">🥈</span> AlexPro - 3200 pts</li>
+        <li><span class="top-position">🥉</span> CreeperKing - 2900 pts</li>
+        <li><span class="top-position">4</span> RedstoneMan - 2500 pts</li>
+        <li><span class="top-position">5</span> BuilderQueen - 2100 pts</li>
+      </ul>
+    </section>
+    <section class="staff-section" id="staff" tabindex="0">
+      <div class="staff-title">Staff</div>
+      <table class="staff-table">
+        <tr>
+          <th></th>
+          <th>Nombre</th>
+          <th>Rol</th>
+        </tr>
+        <tr>
+          <td><img src="https://minotar.net/avatar/Notch/28" class="staff-avatar" alt="Notch"></td>
+          <td>Notch</td>
+          <td class="staff-role">Fundador</td>
+        </tr>
+        <tr>
+          <td><img src="https://minotar.net/avatar/Searge/28" class="staff-avatar" alt="Searge"></td>
+          <td>Searge</td>
+          <td class="staff-role">Admin</td>
+        </tr>
+        <tr>
+          <td><img src="https://minotar.net/avatar/Jeb_/28" class="staff-avatar" alt="Jeb_"></td>
+          <td>Jeb_</td>
+          <td class="staff-role">Moderador</td>
+        </tr>
+        <tr>
+          <td><img src="https://minotar.net/avatar/Dinnerbone/28" class="staff-avatar" alt="Dinnerbone"></td>
+          <td>Dinnerbone</td>
+          <td class="staff-role">Soporte</td>
+        </tr>
+      </table>
+    </section>
+    <footer tabindex="0">
+      © 2025 Chirretesafio. No afiliado con Mojang AB.<br>
+      Inspirado en el estilo de sitios modernos y elegantes.
+    </footer>
+  </div>
+  <script>
+    // Fade in/out welcome, then show legal modal
+    window.onload = function() {
+      document.getElementById('allContent').classList.add('blurred');
+      setTimeout(function() {
+        document.getElementById('fadeInOut').style.display = 'none';
+        document.getElementById('legalBg').classList.add('active');
+        document.getElementById('legalModal').classList.add('active');
+        document.getElementById('allContent').classList.add('blurred');
+        document.body.style.overflow = "hidden";
+      }, 3200);
+
+      document.getElementById('legalAccept').onclick = function() {
+        document.getElementById('legalBg').classList.remove('active');
+        document.getElementById('legalModal').classList.remove('active');
+        document.getElementById('allContent').classList.remove('blurred');
+        document.body.style.overflow = "";
+      };
+      document.getElementById('legalDeny').onclick = function() {
+        window.location.href = "https://www.google.com";
+      };
+
+      // Discord floating button sticky
+      var discordBtn = document.getElementById('discordFloatBtn');
+      var header = document.getElementById('mainHeader');
+      var navDiscord = document.getElementById('discordNavBtn');
+      function checkDiscordFloat() {
+        var rect = header.getBoundingClientRect();
+        if(rect.bottom <= 0) {
+          discordBtn.classList.add('visible');
+          navDiscord.style.visibility = 'hidden';
+        } else {
+          discordBtn.classList.remove('visible');
+          navDiscord.style.visibility = 'visible';
+        }
+      }
+      window.addEventListener('scroll', checkDiscordFloat);
+      checkDiscordFloat();
+    };
+
+    function copyIP() {
+      const ip = "mc.chirretesafio.com";
+      navigator.clipboard.writeText(ip).then(() => {
+        const msg = document.getElementById('copy-msg');
+        msg.textContent = "¡IP copiada!";
+        setTimeout(() => { msg.textContent = ""; }, 1600);
+      });
+    }
+  </script>
+</body>
+</html>
